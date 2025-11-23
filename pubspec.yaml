@@ -34,6 +34,10 @@ dependencies:
   firebase_core: ^4.2.1
   firebase_auth: ^6.1.2
   google_sign_in: ^6.1.0
+  flutter_chess_board: ^1.0.1
+  chess: ^0.7.0
+  stockfish: ^1.7.1
+
 
 
 

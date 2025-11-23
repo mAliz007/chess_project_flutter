@@ -33,6 +33,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  chess:
+    dependency: "direct main"
+    description:
+      name: chess
+      sha256: "69dd13135d2ad3fb523483488db811d4aea2e550bfd6454e93ceccaf042a8614"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
+  chess_vectors_flutter:
+    dependency: transitive
+    description:
+      name: chess_vectors_flutter
+      sha256: "5d9d013d2f1340bde1fda15d915262a420f75ff7f1e219860cb364073e5a3456"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   clock:
     dependency: transitive
     description:
@@ -65,6 +81,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
+  ffi:
+    dependency: transitive
+    description:
+      name: ffi
+      sha256: "289279317b4b16eb2bb7e271abccd4bf84ec9bdcbe999e278a94b804f5630418"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.4"
   firebase_auth:
     dependency: "direct main"
     description:
@@ -118,6 +142,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_chess_board:
+    dependency: "direct main"
+    description:
+      name: flutter_chess_board
+      sha256: f830a44acca1aec751bd4de551f1e5ac466d8bb67e6476e325c5b693398d5755
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -232,6 +264,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
+  logging:
+    dependency: transitive
+    description:
+      name: logging
+      sha256: c8245ada5f1717ed44271ed1c26b8ce85ca3228fd2ffdb75468ab01979309d61
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   matcher:
     dependency: transitive
     description:
@@ -293,6 +333,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.12.1"
+  stockfish:
+    dependency: "direct main"
+    description:
+      name: stockfish
+      sha256: d2af89fb3869cb02d4d0cac98eac4a2e3c33ea031109f9ea442bec3a0b3e4924
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.7.1"
   stream_channel:
     dependency: transitive
     description:
@@ -325,6 +373,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.7"
+  tuple:
+    dependency: transitive
+    description:
+      name: tuple
+      sha256: a97ce2013f240b2f3807bcbaf218765b6f301c3eff91092bcfa23a039e7dd151
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   typed_data:
     dependency: transitive
     description:
