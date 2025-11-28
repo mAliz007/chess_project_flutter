@@ -37,7 +37,8 @@ dependencies:
   flutter_chess_board: ^1.0.1
   chess: ^0.7.0
   stockfish: ^1.7.1
-
+  http: ^1.6.0
+  firebase_database: ^12.1.0
 
 
 
