@@ -1,7 +1,8 @@
-// File: lib/screens/login_page.dart
+// Location: lib/screens/login_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import '../controllers/auth_controller.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -9,130 +10,207 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AuthController _authController = AuthController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   bool _loading = false;
 
-  void _showMessage(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    print("DEBUG: $msg");
+  void _showMessage(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.redAccent : Colors.greenAccent,
+      ),
+    );
   }
 
-  // Email/Password login
-  Future<void> _login() async {
+  Future<void> _handleLogin() async {
     setState(() => _loading = true);
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      await _authController.signInWithEmail(
+        _emailController.text,
+        _passwordController.text,
       );
-      _showMessage("Login successful: ${userCredential.user?.email}");
-      Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
-      _showMessage("Login failed: ${e.message}");
-    } catch (e) {
-      _showMessage("Login failed: $e");
+      _showMessage(e.message ?? "Login failed", isError: true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    setState(() => _loading = false);
   }
 
-  // Google Sign-In
-  Future<void> _googleSignIn() async {
+  Future<void> _handleGoogleLogin() async {
     setState(() => _loading = true);
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        _showMessage("Google Sign-In canceled");
-        setState(() => _loading = false);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
-
-      _showMessage(
-        "Google Sign-In successful: ${userCredential.user?.displayName}",
-      );
-      Navigator.pushReplacementNamed(context, '/home');
-    } on FirebaseAuthException catch (e) {
-      _showMessage("Google Sign-In failed: ${e.message}");
+      await _authController.signInWithGoogle();
     } catch (e) {
-      _showMessage("Google Sign-In failed: $e");
+      _showMessage("Google Sign-In failed", isError: true);
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    setState(() => _loading = false);
   }
 
-  Future<void> _forgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      _showMessage("Please enter your email first");
-      return;
-    }
+  Future<void> _handleForgotPassword() async {
     try {
-      await _auth.sendPasswordResetEmail(email: email);
-      _showMessage("Password reset email sent to $email");
-    } on FirebaseAuthException catch (e) {
-      _showMessage("Failed to send reset email: ${e.message}");
+      await _authController.sendPasswordReset(_emailController.text);
+      _showMessage("Reset link sent!");
     } catch (e) {
-      _showMessage("Failed to send reset email: $e");
+      _showMessage("Enter a valid email first", isError: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Login Page')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            children: [
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
-              ),
-              SizedBox(height: 20),
-              _loading
-                  ? CircularProgressIndicator()
-                  : Column(
-                      children: [
-                        ElevatedButton(onPressed: _login, child: Text('Login')),
-                        SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: _googleSignIn,
-                          child: Text('Login with Google'),
-                        ),
-                        SizedBox(height: 10),
-                        TextButton(
-                          onPressed: _forgotPassword,
-                          child: Text('Forgot Password?'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushReplacementNamed(context, '/signup');
-                          },
-                          child: Text('Go to Signup'),
-                        ),
+    // Access the Indigo Primary Color from AppTheme
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return Stack(
+      children: [
+        // 1. BACKGROUND IMAGE
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/chess_bg.jpg', 
+            fit: BoxFit.cover,
+          ),
+        ),
+
+        // 2. PURPLE OVERLAY (Darker Midnight)
+        Positioned.fill(
+          child: Container(
+            color: Color(0xFF120E29).withOpacity(0.85), // Dark Midnight overlay
+          ),
+        ),
+
+        // 3. THE LOGIN FORM
+        Scaffold(
+          backgroundColor: Colors.transparent, 
+          body: Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  
+                  // --- LOGO SECTION ---
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withOpacity(0.5), // Glowing effect
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        )
                       ],
                     ),
-            ],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20), // Rounded corners for the logo
+                      child: Image.asset(
+                        'assets/images/main_logo.jpg',
+                        height: 100, // Adjust size as needed
+                        width: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  
+                  SizedBox(height: 24),
+                  
+                  Text(
+                    "CHESS MASTER",
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  Text(
+                    "Ranked Mobile Chess",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                  ),
+                  SizedBox(height: 40),
+
+                  // --- INPUTS ---
+                  _buildTextField("Email", _emailController, false),
+                  SizedBox(height: 16),
+                  _buildTextField("Password", _passwordController, true),
+                  
+                  SizedBox(height: 30),
+
+                  // --- BUTTONS ---
+                  _loading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Login Button
+                            ElevatedButton(
+                              onPressed: _handleLogin,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white, 
+                                foregroundColor: primaryColor, 
+                              ),
+                              child: Text("LOGIN"),
+                            ),
+                            SizedBox(height: 16),
+                            
+                            // Google Button
+                            ElevatedButton.icon(
+                              onPressed: _handleGoogleLogin,
+                              icon: Image.asset(
+                                'assets/images/google_logo.png', // Ensure this is .png or .jpg
+                                height: 24,
+                              ),
+                              label: Text("Sign in with Google"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black87,
+                                elevation: 2,
+                              ),
+                            ),
+                            SizedBox(height: 24),
+
+                            // Footer Links
+                            TextButton(
+                              onPressed: _handleForgotPassword,
+                              child: Text(
+                                "Forgot Password?", 
+                                style: TextStyle(color: Colors.white70)
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text("New player?", style: TextStyle(color: Colors.white70)),
+                                TextButton(
+                                  onPressed: () => Navigator.pushReplacementNamed(context, '/signup'),
+                                  child: Text(
+                                    "Create Account", 
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                ],
+              ),
+            ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, bool isObscure) {
+    return TextField(
+      controller: controller,
+      obscureText: isObscure,
+      style: TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.white70),
+        fillColor: Colors.black.withOpacity(0.3), 
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
         ),
       ),
     );
