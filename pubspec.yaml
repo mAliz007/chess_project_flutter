@@ -19,6 +19,7 @@ dependencies:
   chess: ^0.7.0
   stockfish: ^1.7.1
   http: ^1.6.0
+  confetti: ^0.7.0
   firebase_database: ^12.1.0
 
 dev_dependencies:
@@ -33,3 +34,4 @@ flutter:
     - assets/images/chess_bg.jpg
     - assets/images/google_logo.jpg
     - assets/images/main_logo.jpg
+    - assets/images/home_bg.jpg
