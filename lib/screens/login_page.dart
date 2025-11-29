@@ -25,6 +25,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // --- FIXED LOGIN FUNCTION ---
   Future<void> _handleLogin() async {
     setState(() => _loading = true);
     try {
@@ -32,22 +33,35 @@ class _LoginPageState extends State<LoginPage> {
         _emailController.text,
         _passwordController.text,
       );
+      
+      // Force navigation to Home upon success
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      }
+      
     } on FirebaseAuthException catch (e) {
       _showMessage(e.message ?? "Login failed", isError: true);
-    } finally {
+      // Only stop loading if it failed
       if (mounted) setState(() => _loading = false);
-    }
+    } 
   }
 
+  // --- FIXED GOOGLE LOGIN FUNCTION ---
   Future<void> _handleGoogleLogin() async {
     setState(() => _loading = true);
     try {
       await _authController.signInWithGoogle();
+      
+      // Force navigation to Home upon success
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      }
+      
     } catch (e) {
       _showMessage("Google Sign-In failed", isError: true);
-    } finally {
+      // Only stop loading if it failed
       if (mounted) setState(() => _loading = false);
-    }
+    } 
   }
 
   Future<void> _handleForgotPassword() async {
@@ -61,7 +75,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Access the Indigo Primary Color from AppTheme
     final primaryColor = Theme.of(context).primaryColor;
 
     return Stack(
@@ -74,10 +87,10 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
 
-        // 2. PURPLE OVERLAY (Darker Midnight)
+        // 2. PURPLE OVERLAY
         Positioned.fill(
           child: Container(
-            color: Color(0xFF120E29).withOpacity(0.85), // Dark Midnight overlay
+            color: Color(0xFF120E29).withOpacity(0.85), 
           ),
         ),
 
@@ -91,27 +104,26 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   
-                  // --- NEW LOGO SECTION (No crash) ---
+                  // QUEEN LOGO
                   Container(
                     height: 120,
                     width: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1), // Glassy background
-                      shape: BoxShape.circle, // Circular Token shape
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle, 
                       border: Border.all(
                         color: Colors.white.withOpacity(0.2), 
                         width: 2
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: primaryColor.withOpacity(0.5), // Indigo Glow
+                          color: primaryColor.withOpacity(0.5),
                           blurRadius: 30,
                           spreadRadius: 5,
                         )
                       ],
                     ),
                     child: Center(
-                      // Unicode Chess Knight
                       child: Text(
                         "♛", 
                         style: TextStyle(
@@ -141,20 +153,19 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   SizedBox(height: 40),
 
-                  // --- INPUTS ---
+                  // INPUTS
                   _buildTextField("Email", _emailController, false),
                   SizedBox(height: 16),
                   _buildTextField("Password", _passwordController, true),
                   
                   SizedBox(height: 30),
 
-                  // --- BUTTONS ---
+                  // BUTTONS
                   _loading
                       ? CircularProgressIndicator(color: Colors.white)
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Login Button
                             ElevatedButton(
                               onPressed: _handleLogin,
                               style: ElevatedButton.styleFrom(
@@ -165,10 +176,8 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             SizedBox(height: 16),
                             
-                            // Google Button
                             ElevatedButton.icon(
                               onPressed: _handleGoogleLogin,
-                              // Ensure this file exists, or comment out icon: line if testing without it
                               icon: Image.asset(
                                 'assets/images/google_logo.jpg', 
                                 height: 24,
@@ -182,7 +191,6 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             SizedBox(height: 24),
 
-                            // Footer Links
                             TextButton(
                               onPressed: _handleForgotPassword,
                               child: Text(
@@ -222,7 +230,6 @@ class _LoginPageState extends State<LoginPage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.white70),
-        // Make the fill slightly transparent so the background image shows through faintly
         fillColor: Colors.black.withOpacity(0.3), 
         filled: true,
         border: OutlineInputBorder(

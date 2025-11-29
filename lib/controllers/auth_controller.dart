@@ -14,31 +14,36 @@ class AuthController {
         password: password.trim(),
       );
     } catch (e) {
-      rethrow; // Pass error back to UI to display
+      rethrow; 
+    }
+  }
+
+  /// NEW: Create Account with Email and Password
+  Future<UserCredential> signUpWithEmail(String email, String password) async {
+    try {
+      return await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+    } catch (e) {
+      rethrow;
     }
   }
 
   /// Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       
-      if (googleUser == null) {
-        // User canceled the sign-in
-        return null; 
-      }
+      if (googleUser == null) return null; 
 
-      // Obtain the auth details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // Create a new credential
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase with the Google User
       return await _auth.signInWithCredential(credential);
     } catch (e) {
       rethrow;
