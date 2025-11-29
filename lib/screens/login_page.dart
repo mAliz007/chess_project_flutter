@@ -91,25 +91,40 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   
-                  // --- LOGO SECTION ---
+                  // --- NEW LOGO SECTION (No crash) ---
                   Container(
+                    height: 120,
+                    width: 120,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withOpacity(0.1), // Glassy background
+                      shape: BoxShape.circle, // Circular Token shape
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2), 
+                        width: 2
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: primaryColor.withOpacity(0.5), // Glowing effect
-                          blurRadius: 20,
-                          spreadRadius: 2,
+                          color: primaryColor.withOpacity(0.5), // Indigo Glow
+                          blurRadius: 30,
+                          spreadRadius: 5,
                         )
                       ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20), // Rounded corners for the logo
-                      child: Image.asset(
-                        'assets/images/main_logo.jpg',
-                        height: 100, // Adjust size as needed
-                        width: 100,
-                        fit: BoxFit.cover,
+                    child: Center(
+                      // Unicode Chess Knight
+                      child: Text(
+                        "♛", 
+                        style: TextStyle(
+                          fontSize: 70, 
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 10.0,
+                              color: Colors.black45,
+                              offset: Offset(2.0, 2.0),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -153,8 +168,9 @@ class _LoginPageState extends State<LoginPage> {
                             // Google Button
                             ElevatedButton.icon(
                               onPressed: _handleGoogleLogin,
+                              // Ensure this file exists, or comment out icon: line if testing without it
                               icon: Image.asset(
-                                'assets/images/google_logo.png', // Ensure this is .png or .jpg
+                                'assets/images/google_logo.jpg', 
                                 height: 24,
                               ),
                               label: Text("Sign in with Google"),
@@ -206,6 +222,7 @@ class _LoginPageState extends State<LoginPage> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.white70),
+        // Make the fill slightly transparent so the background image shows through faintly
         fillColor: Colors.black.withOpacity(0.3), 
         filled: true,
         border: OutlineInputBorder(
