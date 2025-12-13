@@ -1,33 +1,44 @@
+// Import Flutter material widgets library
 import 'package:flutter/material.dart';
+// Import Firebase authentication package
 import 'package:firebase_auth/firebase_auth.dart';
-import 'single_player_page.dart'; // Import the page to pass arguments
+// Import SinglePlayerPage to navigate and pass arguments
+import 'single_player_page.dart'; 
 
+// HomePage widget is stateless
 class HomePage extends StatelessWidget {
+  // Get the currently signed-in Firebase user
   final User? user = FirebaseAuth.instance.currentUser;
 
+  // Getter to determine the display name for the user
   String get _displayName {
+    // If the user has a displayName set, use it
     if (user?.displayName != null && user!.displayName!.isNotEmpty) {
       return user!.displayName!;
     }
+    // Otherwise, derive name from email
     if (user?.email != null) {
       String name = user!.email!.split('@')[0];
       return name[0].toUpperCase() + name.substring(1);
     }
+    // Default fallback name
     return "Commander";
   }
 
+  // Function to sign out the user and navigate to login screen
   Future<void> _signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
   }
 
   // --- NEW: DIFFICULTY SELECTION DIALOG ---
+  // Function to show a dialog for selecting game difficulty
   void _showDifficultyDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Color(0xFF1F222B),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Color(0xFF1F222B), // Dialog background color
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), // Rounded corners
         title: Center(
             child: Text("SELECT DIFFICULTY", 
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5))
@@ -48,13 +59,14 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // Helper function to create a difficulty selection button
   Widget _buildDifficultyBtn(BuildContext context, String label, Color color, int depth) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
         onPressed: () {
-          Navigator.pop(context); // Close dialog
-          // Navigate manually so we can pass arguments
+          Navigator.pop(context); // Close the difficulty dialog
+          // Navigate to SinglePlayerPage and pass selected difficulty
           Navigator.push(
             context, 
             MaterialPageRoute(
@@ -64,11 +76,11 @@ class HomePage extends StatelessWidget {
         },
         style: OutlinedButton.styleFrom(
           foregroundColor: color,
-          side: BorderSide(color: color.withOpacity(0.5)),
-          padding: EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          side: BorderSide(color: color.withOpacity(0.5)), // Border color with opacity
+          padding: EdgeInsets.symmetric(vertical: 16), // Button padding
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Rounded corners
         ),
-        child: Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+        child: Text(label, style: TextStyle(fontWeight: FontWeight.bold)), // Button text
       ),
     );
   }
@@ -78,14 +90,17 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
+        // Background image for the home page
         Positioned.fill(child: Image.asset('assets/images/chess_bg.jpg', fit: BoxFit.cover)),
+        // Semi-transparent overlay to darken the background
         Positioned.fill(child: Container(color: Color(0xFF120E29).withOpacity(0.90))),
         
+        // Main Scaffold for UI elements
         Scaffold(
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.transparent, // Transparent to show background
           appBar: AppBar(
             backgroundColor: Colors.transparent,
-            elevation: 0,
+            elevation: 0, // No shadow
             centerTitle: false,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,12 +110,13 @@ class HomePage extends StatelessWidget {
               ],
             ),
             actions: [
+              // Logout button in AppBar
               Container(
                 margin: EdgeInsets.only(right: 16),
                 decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
                 child: IconButton(
                   icon: Icon(Icons.logout, color: Colors.redAccent),
-                  onPressed: () => _signOut(context),
+                  onPressed: () => _signOut(context), // Call sign out function
                   tooltip: 'Logout',
                 ),
               ),
@@ -112,6 +128,7 @@ class HomePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Title text
                 Text(
                   "CHOOSE YOUR\nBATTLEFIELD",
                   textAlign: TextAlign.center,
@@ -119,34 +136,36 @@ class HomePage extends StatelessWidget {
                 ),
                 SizedBox(height: 40),
 
-                // UPDATED: Now calls _showDifficultyDialog instead of direct push
+                // SINGLE PLAYER game mode card
                 _buildGameModeCard(
                   context,
                   title: "SINGLE PLAYER",
                   subtitle: "Practice against AI",
                   icon: Icons.psychology,
                   color: Color(0xFF6C63FF),
-                  onTap: () => _showDifficultyDialog(context), // CHANGED
+                  onTap: () => _showDifficultyDialog(context), // Open difficulty selection dialog
                 ),
                 SizedBox(height: 20),
 
+                // LOCAL MULTIPLAYER game mode card
                 _buildGameModeCard(
                   context,
                   title: "LOCAL MULTIPLAYER",
                   subtitle: "Play on same device",
                   icon: Icons.supervised_user_circle,
                   color: Color(0xFF00E676),
-                  onTap: () => Navigator.pushNamed(context, '/local'),
+                  onTap: () => Navigator.pushNamed(context, '/local'), // Navigate to local multiplayer page
                 ),
                 SizedBox(height: 20),
 
+                // ONLINE MATCH game mode card
                 _buildGameModeCard(
                   context,
                   title: "ONLINE MATCH",
-                  subtitle: "Ranked PVP (Coming Soon)",
+                  subtitle: "Play against real Players",
                   icon: Icons.public,
                   color: Color(0xFFFF4081),
-                  onTap: () => Navigator.pushNamed(context, '/online'),
+                  onTap: () => Navigator.pushNamed(context, '/online'), // Navigate to online match page
                 ),
               ],
             ),
@@ -156,12 +175,13 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  // Helper function to build a card for each game mode
   Widget _buildGameModeCard(BuildContext context,
       {required String title, required String subtitle, required IconData icon, required Color color, required VoidCallback onTap}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap, // Handle tap
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: EdgeInsets.all(20),
@@ -173,6 +193,7 @@ class HomePage extends StatelessWidget {
           ),
           child: Row(
             children: [
+              // Icon for the game mode
               Container(
                 height: 60, width: 60,
                 decoration: BoxDecoration(color: color.withOpacity(0.2), borderRadius: BorderRadius.circular(15), border: Border.all(color: color.withOpacity(0.5))),
@@ -189,6 +210,7 @@ class HomePage extends StatelessWidget {
                   ],
                 ),
               ),
+              // Arrow icon at the end
               Icon(Icons.arrow_forward_ios, color: Colors.white30, size: 18),
             ],
           ),

@@ -1,11 +1,17 @@
+// Location: lib/screens/local_multiplayer_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:confetti/confetti.dart'; 
+import 'package:confetti/confetti.dart';
 
 // Import Controller & Components
 import '../controllers/local_multiplayer_controller.dart';
 import '../components/game/holo_board.dart';
-import '../components/game/captured_pieces_hud.dart';
-import '../components/game/local_turn_hud.dart'; // New component
+import '../components/game/local_turn_hud.dart';
+
+// Import NEW components
+import '../components/local_game/LocalNameInputDialog.dart';
+import '../components/local_game/LocalGameOverDialog.dart';
+import '../components/local_game/LocalPlayerCard.dart';
 
 class LocalMultiplayerPage extends StatefulWidget {
   @override
@@ -15,6 +21,9 @@ class LocalMultiplayerPage extends StatefulWidget {
 class _LocalMultiplayerPageState extends State<LocalMultiplayerPage> {
   late LocalMultiplayerController _gameController;
   late ConfettiController _confettiController;
+  
+  String _player1Name = "Player 1"; // White (Default)
+  String _player2Name = "Player 2"; // Black (Default)
 
   @override
   void initState() {
@@ -22,9 +31,12 @@ class _LocalMultiplayerPageState extends State<LocalMultiplayerPage> {
     _gameController = LocalMultiplayerController();
     _confettiController = ConfettiController(duration: const Duration(seconds: 3));
     
-    // Rebuild UI on turn change
     _gameController.addListener(() {
       if (mounted) setState(() {});
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showNameInputDialog();
     });
   }
 
@@ -35,13 +47,37 @@ class _LocalMultiplayerPageState extends State<LocalMultiplayerPage> {
     super.dispose();
   }
 
+  // --- DIALOG WRAPPERS (Calls the external components) ---
+
+  void _showNameInputDialog() {
+    LocalNameInputDialog.show(
+      context: context,
+      p1DefaultName: _player1Name,
+      p2DefaultName: _player2Name,
+      onNamesConfirmed: (p1Name, p2Name) {
+        setState(() {
+          _player1Name = p1Name;
+          _player2Name = p2Name;
+        });
+      },
+    );
+  }
+
+  void _showGameOverDialog(String title, String msg, bool isWin) {
+    LocalGameOverDialog.show(
+      context: context,
+      title: title,
+      msg: msg,
+      isWin: isWin,
+      gameController: _gameController,
+    );
+  }
+
   // --- LOGIC ---
 
   void _onMove() {
-    // 1. Sync State
     _gameController.onMove();
 
-    // 2. Check Game Over
     LocalGameStatus status = _gameController.checkGameOver();
     if (status != LocalGameStatus.playing) {
       _handleGameOver(status);
@@ -59,12 +95,12 @@ class _LocalMultiplayerPageState extends State<LocalMultiplayerPage> {
 
     switch (status) {
       case LocalGameStatus.whiteWins:
-        title = "WHITE WINS!";
-        msg = "Player 1 takes the victory.";
+        title = "${_player1Name.toUpperCase()} WINS!";
+        msg = "$_player1Name takes the victory playing White.";
         break;
       case LocalGameStatus.blackWins:
-        title = "BLACK WINS!";
-        msg = "Player 2 takes the victory.";
+        title = "${_player2Name.toUpperCase()} WINS!";
+        msg = "$_player2Name takes the victory playing Black.";
         break;
       case LocalGameStatus.draw:
         title = "DRAW";
@@ -76,46 +112,6 @@ class _LocalMultiplayerPageState extends State<LocalMultiplayerPage> {
     }
 
     _showGameOverDialog(title, msg, isWin);
-  }
-
-  // --- DIALOGS ---
-
-  void _showGameOverDialog(String title, String msg, bool isWin) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Color(0xFF1F222B),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: isWin ? Colors.amber : Colors.grey, width: 2)
-        ),
-        title: Column(
-          children: [
-            Icon(Icons.emoji_events, size: 50, color: isWin ? Colors.amber : Colors.grey),
-            SizedBox(height: 10),
-            Text(title, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2)),
-          ],
-        ),
-        content: Text(msg, textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)),
-        actions: [
-          OutlinedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: Text("LEAVE", style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _gameController.resetGame();
-            },
-            child: Text("REMATCH"),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showExitDialog() {
@@ -142,83 +138,86 @@ class _LocalMultiplayerPageState extends State<LocalMultiplayerPage> {
         Positioned.fill(child: Image.asset('assets/images/chess_bg.jpg', fit: BoxFit.cover)),
         Positioned.fill(child: Container(color: Color(0xFF120E29).withOpacity(0.95))),
 
+// Modified SCROLLABLE Scaffold body (starts around line 140)
+
         Scaffold(
           backgroundColor: Colors.transparent,
           body: SafeArea(
-            child: Column(
-              children: [
-                // Top Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(12)),
-                        child: PopupMenuButton<String>(
-                          icon: Icon(Icons.grid_view_rounded, color: Colors.white70),
-                          color: Color(0xFF2A2D3A),
-                          onSelected: (value) {
-                            if (value == 'quit') _showExitDialog();
-                            if (value == 'restart') _gameController.resetGame();
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(value: 'restart', child: Row(children: [Icon(Icons.refresh, color: Colors.blueAccent), SizedBox(width: 8), Text("Restart", style: TextStyle(color: Colors.white))])),
-                            PopupMenuItem(value: 'quit', child: Row(children: [Icon(Icons.exit_to_app, color: Colors.redAccent), SizedBox(width: 8), Text("Quit", style: TextStyle(color: Colors.white))])),
-                          ],
+            child: SingleChildScrollView( // <-- NEW: Add SingleChildScrollView
+              child: Column(
+                children: [
+                  // --- TOP BAR ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(12)),
+                          child: PopupMenuButton<String>(
+                            icon: Icon(Icons.grid_view_rounded, color: Colors.white70),
+                            color: Color(0xFF2A2D3A),
+                            onSelected: (value) {
+                              if (value == 'quit') _showExitDialog();
+                              if (value == 'restart') _gameController.resetGame();
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem(value: 'restart', child: Row(children: [Icon(Icons.refresh, color: Colors.blueAccent), SizedBox(width: 8), Text("Restart", style: TextStyle(color: Colors.white))])),
+                              PopupMenuItem(value: 'quit', child: Row(children: [Icon(Icons.exit_to_app, color: Colors.redAccent), SizedBox(width: 8), Text("Quit", style: TextStyle(color: Colors.white))])),
+                            ],
+                          ),
                         ),
-                      ),
-                      // NEW TURN HUD
-                      LocalTurnHUD(isWhiteTurn: _gameController.isWhiteTurn),
-                      SizedBox(width: 40),
-                    ],
+                        LocalTurnHUD(isWhiteTurn: _gameController.isWhiteTurn),
+                        SizedBox(width: 40),
+                      ],
+                    ),
                   ),
-                ),
 
-                Spacer(),
+                  // The Spacers need to be replaced with SizedBoxes now,
+                  // because Spacers only work inside a tight Column/Row without SingleChildScrollView.
+                  SizedBox(height: 16), // Replaces first Spacer
 
-                // PLAYER 2 (BLACK)
-                _buildPlayerCard(
-                  name: "PLAYER 2",
-                  rank: "Black Pieces",
-                  color: Colors.pinkAccent, // Distinct color for P2
-                  isLeftAligned: false,
-                  // Logic: Player 2 (Black) captures White pieces. 
-                  // In our HUD, 'ai' mode shows White pieces captured.
-                  child: CapturedPiecesHUD(fen: _gameController.fen, capturedBy: 'ai'), 
-                ),
+                  // PLAYER 2 (BLACK) - Uses new component
+                  LocalPlayerCard(
+                    name: _player2Name.toUpperCase(),
+                    rank: "Black Pieces",
+                    color: Colors.pinkAccent,
+                    isLeftAligned: false,
+                    fen: _gameController.fen, 
+                    capturedBy: 'ai', // Black captures White pieces
+                  ),
 
-                SizedBox(height: 12),
+                  SizedBox(height: 12),
 
-                // Board
-                HoloBoard(
-                  controller: _gameController.boardController, 
-                  size: boardSize,
-                  onMove: _onMove,
-                ),
+                  // Board
+                  HoloBoard(
+                    controller: _gameController.boardController, 
+                    size: boardSize,
+                    onMove: _onMove,
+                  ),
 
-                SizedBox(height: 12),
+                  SizedBox(height: 12),
 
-                // PLAYER 1 (WHITE)
-                _buildPlayerCard(
-                  name: "PLAYER 1",
-                  rank: "White Pieces",
-                  color: Colors.greenAccent,
-                  isLeftAligned: true,
-                  // Logic: Player 1 (White) captures Black pieces.
-                  // In our HUD, 'player' mode shows Black pieces captured.
-                  child: CapturedPiecesHUD(fen: _gameController.fen, capturedBy: 'player'),
-                ),
+                  // PLAYER 1 (WHITE) - Uses new component
+                  LocalPlayerCard(
+                    name: _player1Name.toUpperCase(),
+                    rank: "White Pieces",
+                    color: Colors.greenAccent,
+                    isLeftAligned: true,
+                    fen: _gameController.fen, 
+                    capturedBy: 'player', // White captures Black pieces
+                  ),
 
-                Spacer(),
-                Text("Pass device to opponent", style: TextStyle(color: Colors.white24, fontSize: 12)),
-                SizedBox(height: 10),
-              ],
+                  SizedBox(height: 16), // Replaces second Spacer
+                  Text("Pass device to opponent", style: TextStyle(color: Colors.white24, fontSize: 12)),
+                  SizedBox(height: 10),
+                ],
+              ),
             ),
           ),
         ),
 
-        // Confetti
+        // Confetti (Must remain in the Stack)
         Align(
           alignment: Alignment.topCenter,
           child: ConfettiWidget(
@@ -231,41 +230,6 @@ class _LocalMultiplayerPageState extends State<LocalMultiplayerPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildPlayerCard({required String name, required String rank, required Color color, required bool isLeftAligned, required Widget child}) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 12),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: isLeftAligned ? MainAxisAlignment.start : MainAxisAlignment.end,
-            children: [
-              if (isLeftAligned) ...[CircleAvatar(backgroundColor: color.withOpacity(0.2), radius: 16, child: Icon(Icons.person, color: color, size: 18)), SizedBox(width: 10)],
-              Column(
-                crossAxisAlignment: isLeftAligned ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                children: [
-                  Text(name, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text(rank, style: TextStyle(color: color, fontSize: 10)),
-                ],
-              ),
-              if (!isLeftAligned) ...[SizedBox(width: 10), CircleAvatar(backgroundColor: color.withOpacity(0.2), radius: 16, child: Icon(Icons.person_outline, color: color, size: 18))],
-            ],
-          ),
-          SizedBox(height: 8),
-          Align(
-            alignment: isLeftAligned ? Alignment.centerLeft : Alignment.centerRight,
-            child: child,
-          ),
-        ],
-      ),
     );
   }
 }
