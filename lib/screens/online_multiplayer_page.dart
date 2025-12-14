@@ -62,13 +62,17 @@ class _OnlineMultiplayerPageState extends State<OnlineMultiplayerPage> {
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                _controller.leaveGame(); // Leave ongoing game
+                _controller.forfeitGame(); // Now calls the forfeit method to end game
               }, 
               child: Text("Leave", style: TextStyle(color: Colors.redAccent))
             ),
           ],
         ),
       );
+    } else if (_controller.status == OnlineStatus.rejoinNeeded || _controller.status == OnlineStatus.gameOver) {
+      // If stuck on rejoin or game over screen, just cancel and go back
+      _controller.leaveGame(); 
+      Navigator.pop(context); 
     } else {
       _controller.leaveGame(); // Cancel queue/search
       Navigator.pop(context); // Go back to home
@@ -98,12 +102,26 @@ class _OnlineMultiplayerPageState extends State<OnlineMultiplayerPage> {
             title: Text(_getTitle(), style: TextStyle(letterSpacing: 2, fontWeight: FontWeight.bold)),
             centerTitle: true,
           ),
-          body: _controller.status == OnlineStatus.inGame 
-              ? _buildGameView(boardSize) // Show board when in game
-              : _buildLobbyView(),       // Show lobby otherwise
+          body: _buildBody(boardSize), // Use a switch method for cleaner body
         ),
       ],
     );
+  }
+
+  // NEW: Body switch to handle all states
+  Widget _buildBody(double boardSize) {
+    switch (_controller.status) {
+      case OnlineStatus.inGame:
+        return _buildGameView(boardSize);
+      case OnlineStatus.rejoinNeeded:
+        return _buildRejoinView(); 
+      case OnlineStatus.gameOver: // NEW CASE ADDED
+        return _buildGameOverView();
+      case OnlineStatus.lobby:
+      case OnlineStatus.searching:
+      default:
+        return _buildLobbyView();
+    }
   }
 
   // Determine title based on current game status
@@ -112,10 +130,12 @@ class _OnlineMultiplayerPageState extends State<OnlineMultiplayerPage> {
       case OnlineStatus.lobby: return "ONLINE LOBBY";
       case OnlineStatus.searching: return "SEARCHING...";
       case OnlineStatus.inGame: return "RANKED MATCH";
+      case OnlineStatus.rejoinNeeded: return "GAME FOUND"; 
+      case OnlineStatus.gameOver: return "MATCH ENDED"; // NEW TITLE
     }
   }
 
-  // --- VIEW 1: LOBBY ---
+  // --- VIEW 1: LOBBY & SEARCHING (No changes) ---
   Widget _buildLobbyView() {
     bool isSearching = _controller.status == OnlineStatus.searching;
 
@@ -147,8 +167,8 @@ class _OnlineMultiplayerPageState extends State<OnlineMultiplayerPage> {
               child: Text("CANCEL", style: TextStyle(color: Colors.redAccent)),
             )
           ] else ...[
-             // Find match button
-             GestureDetector(
+            // Find match button
+            GestureDetector(
               onTap: () => _controller.joinQueue(_userId),
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
@@ -169,7 +189,7 @@ class _OnlineMultiplayerPageState extends State<OnlineMultiplayerPage> {
     );
   }
 
-  // --- VIEW 2: GAME ARENA ---
+  // --- VIEW 2: GAME ARENA (No changes) ---
   Widget _buildGameView(double boardSize) {
     bool amIWhite = _controller.myColor == 'white'; // Determine player color
     
@@ -243,7 +263,147 @@ class _OnlineMultiplayerPageState extends State<OnlineMultiplayerPage> {
     );
   }
 
-  // Player info card with captured pieces HUD
+  // --- VIEW 3: REJOIN / FORFEIT (No changes) ---
+  Widget _buildRejoinView() {
+    final myColorText = _controller.myColor == 'white' ? 'White' : 'Black';
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.warning_amber_rounded, size: 80, color: Colors.orangeAccent),
+            SizedBox(height: 20),
+            Text(
+              "Unfinished Game Detected!",
+              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 10),
+            Text(
+              "You were playing as $myColorText in a previous match. What would you like to do?",
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 40),
+            
+            // Rejoin Button
+            ElevatedButton.icon(
+              icon: Icon(Icons.refresh, color: Colors.black),
+              label: Text("REJOIN MATCH", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+              onPressed: () => _controller.rejoinGame(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.greenAccent,
+                minimumSize: Size(double.infinity, 60),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+            ),
+            SizedBox(height: 20),
+            
+            // Forfeit Button
+            OutlinedButton.icon(
+              icon: Icon(Icons.flag, color: Colors.redAccent),
+              label: Text("FORFEIT & START NEW", style: TextStyle(fontSize: 16, color: Colors.redAccent)),
+              onPressed: () {
+                // Confirm action before forfeiting and deleting the game
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: Color(0xFF1F222B),
+                    title: Text("Forfeit Game?", style: TextStyle(color: Colors.white)),
+                    content: Text("This will abandon the unfinished match permanently.", style: TextStyle(color: Colors.grey)),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: Colors.white54))),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _controller.forfeitGame();
+                        }, 
+                        child: Text("Forfeit", style: TextStyle(color: Colors.redAccent))
+                      ),
+                    ],
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: Size(double.infinity, 60),
+                side: BorderSide(color: Colors.redAccent),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- NEW VIEW 4: GAME OVER ---
+  Widget _buildGameOverView() {
+    final isWinner = _controller.winnerId == _userId;
+    final titleText = isWinner ? "VICTORY!" : "DEFEAT!";
+    final messageText = _getGameOverMessage();
+    final color = isWinner ? Colors.greenAccent : Colors.redAccent;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isWinner ? Icons.emoji_events : Icons.sentiment_dissatisfied, size: 80, color: color),
+            SizedBox(height: 20),
+            Text(
+              titleText,
+              style: TextStyle(color: color, fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: 2),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 10),
+            Text(
+              messageText,
+              style: TextStyle(color: Colors.white70, fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 40),
+            
+            // Return to Lobby Button
+            ElevatedButton.icon(
+              icon: Icon(Icons.home, color: Colors.black),
+              label: Text("RETURN TO LOBBY", style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                // Clean up game state and return to lobby view
+                _controller.leaveGame();
+                // Note: The controller sets status to 'lobby', triggering a rebuild of _buildLobbyView
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                minimumSize: Size(double.infinity, 60),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Helper to determine the message based on the game status field
+  String _getGameOverMessage() {
+    switch (_controller.gameStatus) {
+      case 'forfeited':
+        return _controller.winnerId == _userId
+            ? "Your opponent has forfeited the match."
+            : "You forfeited the match.";
+      // case 'checkmate':
+      //   return "The game ended by Checkmate.";
+      // case 'stalemate':
+      //   return "The game ended in a Stalemate.";
+      default:
+        return "The match has ended.";
+    }
+  }
+
+  // Player info card with captured pieces HUD (No changes)
   Widget _buildPlayerCard({required String name, required String rank, required Color color, required bool isLeftAligned, required Widget child}) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16),
